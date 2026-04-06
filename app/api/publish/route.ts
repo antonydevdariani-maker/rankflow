@@ -42,8 +42,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = (await req.json()) as { blogId?: string };
+    const body = (await req.json()) as { blogId?: string; topic?: string };
     const blogId = body.blogId?.trim();
+    const customTopic = body.topic?.trim() || "";
+
     if (!blogId) {
       return NextResponse.json({ error: "blogId required" }, { status: 400 });
     }
@@ -61,6 +63,11 @@ export async function POST(req: Request) {
       );
     }
 
+    // Use custom topic if provided, otherwise fall back to the blog's niche
+    const nichePrompt = customTopic
+      ? `Niche: ${blog.niche}\nSpecific topic focus: ${customTopic}`
+      : `Niche: ${blog.niche}`;
+
     // 1) Idea as JSON (json_object mode when supported; parser still tolerates extra text)
     let ideaRaw: string;
     try {
@@ -73,7 +80,7 @@ export async function POST(req: Request) {
           },
           {
             role: "user",
-            content: `Niche: ${blog.niche}
+            content: `${nichePrompt}
 
 Return JSON with exactly these keys:
 - title: string
@@ -97,7 +104,7 @@ Return JSON with exactly these keys:
             },
             {
               role: "user",
-              content: `Niche: ${blog.niche}
+              content: `${nichePrompt}
 
 Return a single JSON object only:
 {"title":"...","slug":"...","description":"...","keywords":["..."]}`,
@@ -127,7 +134,7 @@ Return a single JSON object only:
 Title: ${idea.title}
 Meta description: ${idea.description}
 Keywords: ${idea.keywords.join(", ")}
-Niche: ${blog.niche}
+${nichePrompt}
 
 Requirements:
 - About 1500 words
