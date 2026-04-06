@@ -16,17 +16,20 @@ function toMdxFrontmatter(
     slug: string;
     description: string;
     keywords: string[];
+    tags: string[];
   },
   dateIso: string,
   bodyMd: string,
 ): string {
   const kw = JSON.stringify(idea.keywords);
+  const tags = JSON.stringify(idea.tags);
   return `---
 title: "${idea.title.replace(/"/g, '\\"')}"
 description: "${idea.description.replace(/"/g, '\\"')}"
 date: "${dateIso}"
 slug: "${idea.slug}"
 keywords: ${kw}
+tags: ${tags}
 ---
 
 ${bodyMd}`;
@@ -76,7 +79,7 @@ export async function POST(req: Request) {
           {
             role: "system",
             content:
-              "You are an SEO strategist. Respond with a single JSON object only (valid JSON). Keys: title, slug, description, keywords.",
+              "You are an SEO strategist. Respond with a single JSON object only (valid JSON). Keys: title, slug, description, keywords, tags.",
           },
           {
             role: "user",
@@ -86,7 +89,8 @@ Return JSON with exactly these keys:
 - title: string
 - slug: string (url-friendly)
 - description: string (under 160 chars)
-- keywords: string array (3-6 items)`,
+- keywords: string array (3-6 items, for SEO/meta)
+- tags: string array (3-5 items, lowercase kebab-case topics for site tag pages, e.g. cold-air-intake, performance)`,
           },
         ],
         1024,
@@ -107,7 +111,7 @@ Return JSON with exactly these keys:
               content: `${nichePrompt}
 
 Return a single JSON object only:
-{"title":"...","slug":"...","description":"...","keywords":["..."]}`,
+{"title":"...","slug":"...","description":"...","keywords":["..."],"tags":["..."]}`,
             },
           ],
           1024,
@@ -134,6 +138,7 @@ Return a single JSON object only:
 Title: ${idea.title}
 Meta description: ${idea.description}
 Keywords: ${idea.keywords.join(", ")}
+Tags: ${idea.tags.join(", ")}
 ${nichePrompt}
 
 Requirements:
@@ -164,6 +169,7 @@ Requirements:
       ok: true,
       title: idea.title,
       slug: idea.slug,
+      tags: idea.tags,
       path: filePath,
     });
   } catch (e) {
